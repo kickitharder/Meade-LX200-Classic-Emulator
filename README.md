@@ -6,7 +6,7 @@ When an Arduino with the code loaded onto it is plugged into a PC, it will appea
 
 The simulator emulates the slewing of the telescope, mount pulse and tracking frequency.  Settings which are normally remembered by a real LX200 are stored in the Arduino’s EEPROM.
 
-Its main use it to test the development of ASCOM drivers and whether software will work with an LX200 with actually being connected to the LX200.
+Its main use it to test the development of ASCOM drivers and whether software will work with an LX200 with actually being connected to a real LX200.
 
 This simulator is still in development – please advise me of any issues you may come across.
 
@@ -16,7 +16,7 @@ Limitations
 
 2)	The Simulator emulates the LX200’s library, but it will not return the same objects in the real library.  Instead, it randomly produces objects randomly (seeded).  There simply is not the space to incorporate data for 110 Messier, 7840 NGC, 5386 IC, and 12921 UGC objects, etc!  The planets are incorporated and their RA and DEC coordinates will be shown randomly (seeded) near the ecliptic.
 
-3)	There is no onboard clock so simulator’s clock and calendar will have to be updated before use, if important.
+3)	There is no onboard clock so simulator’s clock and calendar will have to be updated before use on start-up, if important.
 
 4)	The :Lf# command, which performs a field operation to find objects closest to the centre of field on a real LX200 does not work on the Simulator. Instead, the Simulator will always return the message “Objects:  0”.
 
