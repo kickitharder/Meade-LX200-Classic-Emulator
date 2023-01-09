@@ -21,6 +21,7 @@ bool prec = 0;                                  // 0 = Low precision, 1 = High p
 byte slewAltAz = 1;                             // 1 = AltAz Slew, 0 = Eq Slew
 int freq = 601;                                 // Track frequency x 10
 bool freqQ = true;                              // true = sidereal rate, false = custom rate
+char homeStat = '0';
 
 unsigned long slewStartTime, slewTimerRA, slewTimerDEC, moveRAmillis, moveDECmillis;
 long sidOffset = 0;
@@ -35,6 +36,8 @@ struct {
                           "AAA"};
   int latitude[4] =  {3089, 0, 0, 0};
   int longitude[4] = {0, 0, 0, 0};
+  long homeHA = 0;
+  long homeDEC = 0;
   byte siteNo = 0;
   char align = 'P';
   uint8_t hourOffset = 0;
@@ -125,6 +128,10 @@ void actionCmd() {
   if (buf[0] != ':' || c != '#') return;
   ptr = buf[ptr - 1] = resp[0] = resp[1] = 0;   // Remove '#' and reset other things
   memmove(buf, buf + 1, 15);                    // Shift buf chars to the left one.
+// HOME SEARCH IN OPERATION
+  if (cmd("Q#")) stop();
+  if (cmd("hF")) resp[0] = homeStat & '3';
+  if (homeStat == '2') return;
 // COORDINATES
   if (cmd("GR")) getRA();
   if (cmd("Gr")) getHMS(objRA);
@@ -160,6 +167,10 @@ void actionCmd() {
   if (buf[0] == 'R') setMoveRate();       // RG RC RM RS#
   if (buf[0] == 'M') move();              // Mn Ms Me Mw MS MA
   if (buf[0] == 'Q') stop();              // Qn Qs Qe Qw Q
+  if (cmd("hS")) homeSave();
+  if (cmd("hF")) homeSet();
+  if (cmd("hP")) homePark();
+
 // SITE DETAILS
   if (cmd("Gt")) getLat();
   if (cmd("St")) setLat();
@@ -472,8 +483,8 @@ void move() {                 // :Mn#  :Ms#  :Me#  :Mw#  :MS#  :MA#
     case 's': if (moveDECdir != -1) {updateCoords(); moveDECdir = -1; moveDECmillis = millis();} break;
     case 'e': if (moveRAdir != 1)   {updateCoords(); moveRAdir  =  1; moveRAmillis  = millis();} break;
     case 'w': if (moveRAdir != -1)  {updateCoords(); moveRAdir  = -1; moveRAmillis  = millis();} break;
-    case 'S': move2Eq(); return;
-    case 'A': move2AltAz(); return;
+    case 'S': homeStat = '0'; move2Eq(); return;
+    case 'A': homeStat = '0'; move2AltAz(); return;
   }
   resp[0] = 0;
 }
@@ -541,12 +552,17 @@ void move2Eq() {              //  :MS#
 
   eq2altAz(objRA, objDEC);
   if (telALT < 0) {
-    sendMsg("1Object below    horizon.        "); // Object below horizon
+    if (homeStat != '2') {
+      sendMsg("1Object below    horizon.        "); // Object below horizon
+      homeStat = '0';
+    }
     return;
   }
   updateCoords();
-  targRA = objRA;
-  targDEC = objDEC;  
+  if (homeStat != '2') {
+    targRA = objRA;
+    targDEC = objDEC;
+  }
   slewRAdir  = (targRA  > telRA)  - (targRA  < telRA);
   slewDECdir = (targDEC > telDEC) - (targDEC < telDEC);
 
@@ -574,6 +590,28 @@ void move2AltAz() {           //  :MA#
   objRA  = objRAtemp;
   objDEC = objDECtemp;
   slewAltAz = 1;
+}
+//-------------------------------------------------------------------------------------------------
+void homeSave() {             //    :hS#
+  homeStat = '1';
+  updateCoords();
+  ee.homeDEC = telDEC;
+  ee.homeHA = telRA - sidTime();
+  EEPROM.put(0, ee);
+}
+//-------------------------------------------------------------------------------------------------
+void homeSet() {              //    :hF#
+  homeStat = '2';
+  targDEC = ee.homeDEC;
+  targRA = sidTime() + ee.homeHA;
+  move2Eq();
+}
+//-------------------------------------------------------------------------------------------------
+void homePark() {             //    :hP#
+  homeStat = '4';
+  targDEC = ee.homeDEC;
+  targRA = sidTime() + ee.homeHA;
+  move2Eq();
 }
 #pragma endregion MOVEMENT
 #pragma region SITE DETAILS
@@ -933,6 +971,10 @@ void updateCoords() {
 
   // DEAL WITH PULSE MOVES, TRACKING & DRIVE FREQUENCY
   if (!(slewRAdir || slewDECdir)) {
+    if (homeStat == '2' || homeStat == '4') {       // Telescope is parked - update coords
+      telRA == sidTime() + ee.homeHA;
+      homeStat == '1';                              // Home position found
+    }
     if (moveRAdir) {                                // RA pulse move?
       mvt = (millisNow - moveRAmillis) * moveRAdir * (moveRate - 1);    // moveRate: G = 2, C = 32, F = 480, S = 240 * slewRate
       telRAms += mvt;
@@ -940,6 +982,7 @@ void updateCoords() {
       mvt += telRAms;
       mvt /= 1000;
       telRA += mvt;                                 // Pulse move
+      homeStat = '0';
     }
     else if (freq != 601 && !freqQ) telRA += long(float(millisNow - moveRAmillis) * 601.0 / float(freq)); // Account for drive freq
 
@@ -947,6 +990,7 @@ void updateCoords() {
       mvt = (millisNow - moveDECmillis) * moveDECdir * moveRate * 15;   // moveRate: G = 30, C = 480, F = 7200, S = 3600 * slewRate
       mvt /= 1000;
       telDEC += mvt;                                 // Pulse move
+      homeStat = '0';
     }
   }
   moveRAmillis = millisNow;
