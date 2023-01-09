@@ -12,7 +12,7 @@ The Simulator is still in development – please advise me of any issues you may
 
 Limitations
 
-1)	Currently, the 16” LX200 commands regarding Home Position are simulated but untested with regard to how they work with a real LX200.  These commands are :hS#, :hF#, :hP# and :h#?.  I have not experienced what an actual 16” LX200 does in regards to these command, but when I have I will probably incorporate them.
+1)	Currently, the 16” LX200 commands regarding Home Position are simulated but untested with regard to how they work with a real LX200.  These commands are :hS#, :hF#, :hP# and :h#?.  I have not experienced what a real 16” LX200 does in this regard.
 
 2)	The Simulator emulates the LX200’s library, but it will not return the same objects in the real library.  Instead, it randomly produces objects randomly (seeded).  There simply is not the space to incorporate data for 110 Messier, 7840 NGC, 5386 IC, and 12921 UGC objects, etc!  The planets are incorporated and their RA and DEC coordinates will be shown randomly (seeded) near the ecliptic.
 
