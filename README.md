@@ -4,7 +4,7 @@ This sketch will work on any Arduino with at least 32K Flash ROM, 2K RAM and 512
 
 When an Arduino with the code loaded onto it is plugged into a PC, it will appear as a COM port which can then be picked up by any application which can communicate with a Meade LX200 Classic SCT telescope.  This includes planetarium software and other telescope control programs which can natively talk to the LX200.  Additionally, ASCOM drivers which have been written for these LX200s, such as Keith Rickard’s Meade LX200 Classic ASCOM Driver, will also work.
 
-The simulator emulates the slewing of the telescope, mount pulse and tracking frequency.  Settings which normally remember by a real LX200 are stored in the Arduino’s EEPROM.
+The simulator emulates the slewing of the telescope, mount pulse and tracking frequency.  Settings which are normally remembered by a real LX200 are stored in the Arduino’s EEPROM.
 
 Its main use it to test the development of ASCOM drivers and whether software will work with an LX200 with actually being connected to the LX200.
 
@@ -23,4 +23,4 @@ The planets are incorporated and their RA and DEC coordinates will be shown rand
 4)	The :Lf# command, which performs a field operation to find objects closest to the centre of field on a real LX200 does not work on the Simulator. Instead, the Simulator will always return the message “Objects:  0”.
 
 Keith Rickard
-9 January 2023 
+9 January 2023
