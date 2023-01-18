@@ -25,8 +25,11 @@ Limitations
 I have added two additional commands for the Simulator (they are not on the real LX200):
 
 1)  :VE#    Returns the version of the Simulator.
-2)  :VR#    Resets the Simulator's settings.  The Arduino needs to be reset/restarted for this to take effect.
-
+2)  :VZ#    Resets the Simulator's settings.  The Arduino needs to be reset/restarted for this to take effect.
+3)  :VS#    Make Simulator act as a 7", 8" or 10" LX200
+4)  :VM#    Make Simulator act as a 12" LX200
+5)  :VL#    Make Simulator act as a 16" LX200
+6)  :VT#    Enter Test Mode
 
 Keith Rickard
-9 January 2023 
+18 January 2023 
