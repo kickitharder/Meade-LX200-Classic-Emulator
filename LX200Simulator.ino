@@ -1,4 +1,4 @@
-#define version "LX200 Simulator V2.230118#"
+#define version "LX200 Simulator V2.230121#"
 
 #pragma region DEFINITIONS
 #include <EEPROM.h>
@@ -34,7 +34,7 @@ int slewRate = 1928;                            // SLEW rate 2-8 deg/s (241 * 8 
 int moveRate = 1928;                            // 0. NONE 1.GUIDE = 2x sid, 2.CNTR = 32x sid, 3.FIND = 2 degs/s, 4.SLEW = 2-8 degs/s
 
 struct ee {
-  char siteNames[4][4] = {"GRE", 
+  char siteNames[4][4] = {"PUT", 
                           "AAA",
                           "AAA",
                           "AAA"};
@@ -129,6 +129,7 @@ void actionCmd() {
     if (c == '#') break;
   }
   if (buf[0] != ':' || c != '#') return;
+  if (test) Serial.print(buf);
   ptr = buf[ptr - 1] = 0;                       // Remove '#' and reset other things
   memcpy(buf, buf + 1, 15);                     // Shift buf chars to the left one.
 // HOME SEARCH IN OPERATION - 16" LX200 ONLY
@@ -231,7 +232,7 @@ void actionCmd() {
   EEPROM.put(0, ee);                  // Update any permanent settings
   Serial.print(resp);
   if (resp[1]) Serial.print('#');
-  if (test) Serial.println('_');
+  if (test) Serial.println('|');
 }
 //-------------------------------------------------------------------------------------------------
 bool cmd(char c[]) {
@@ -451,7 +452,7 @@ void getSid() {               //  :GS#
 //-------------------------------------------------------------------------------------------------
 void setDate() {              //  :SCMM/DD/YY#
   int y, m, d;
-  if(sscanf(buf, "SC%02d/%02d/%02d", &m, &d, &y)) {
+  if(sscanf(buf, "SC%02d/%02d/%02d", &m, &d, &y) == 3) {
     if(y > 100) return;
     y += 1900 + (y < 92) * 100;
     if((m > 12)|(m < 1)) return;
@@ -490,7 +491,7 @@ void setTime() {              //  :SLHH:MM:SS#
 void setSid() {               //  :SSHH:MM:SS#
   int h, m, s;
   updateTime();
-  if(sscanf(buf, "SS%02d:%02d:%02d", &h, &m, &s)) {
+  if(sscanf(buf, "SS%02d:%02d:%02d", &h, &m, &s) == 3) {
     if ((h >= 24) || (m >= 60) || (s >= 60)) return;
     sidOffset += normL((3600L * h + 60 * m + s) - (long)sidTime(), 86400);
     resp[0] = '1';
@@ -626,7 +627,7 @@ void move2Eq() {              //  :MS#
 void move2AltAz() {           //  :MA#
   long objRAtemp  = objRA;
   long objDECtemp = objDEC;
-  altAz2eq();
+  altAz2eq();                 // Set objRA and objDEC based on AltAz coords
   move2Eq();
   objRA  = objRAtemp;
   objDEC = objDECtemp;
@@ -1085,9 +1086,9 @@ void altAz2eq() {
 /*  Astronomical Algorithms V2 page 94 (13.6b)
     tan H = (sin A) / (cos A sin l + tan h cos l)
     sin d = sin l sin h - cos l cos h cos A       */
-  float A = telAZ  / 3600;                                              // Azimuth
-  float h = telALT / 3600;                                              // Altitude
-  float phi = ee.latitude[ee.siteNo]/ 60;                               // Latitude
+  float A = objAZ  / 3600;                                              // Azimuth
+  float h = objALT / 3600;                                              // Altitude
+  float phi = (float)ee.latitude[ee.siteNo]/ 60.0;                      // Latitude
 
   float H = atan2D(sinD(A), cosD(A) * sinD(phi) + tanD(h) * cosD(phi)); // Hour Angle (inc W from S)
   float d = asinD(sinD(phi) * sinD(h) - cosD(phi) * cosD(h) * cosD(A));
