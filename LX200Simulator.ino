@@ -1,13 +1,34 @@
-#define version "LX200 Simulator V2.230121#"
+// 0123456789ABCDEF 
+// RA   12:34:56
+// DEC +12*34:56
+// AZ  123*45:06
+// ALT +12*34:56
+// ObjRA   12:34:56
+// ObjDEC +12*34:56
+// ObjAZ  123*56:06
+// ObjALT +12*34:56
+// Loc 12:34:56
+// UTC 01:23:45
+// Cal 12/25/23
+// Sid 12:34:56
+// Lat:   +51*34
+// Long:  359*12
+// Model:    10"
+// Max Slew: 8
+// Move:  E(G) N(G)
+// Mount: P
+
+#define version "LX200 Simulator V2.230128#"
 
 #pragma region DEFINITIONS
 #include <EEPROM.h>
 #include <Arduino.h>
-#include <SoftwareSerial.h>
-SoftwareSerial Serial0(11, 12);   //RXD, TXD
-#define sol2sid   1.0027379093508                 // ~366.25/365.25
-#define rad2deg   57.29577951
-#define deg2rad   0.017453293
+#include <Wire.h>
+#include <LiquidCrystal.h>
+//#include <SoftwareSerial.h>
+//SoftwareSerial Serial0(11, 12);   //RXD, TXD
+#define SOL2SID   1.0027379093508                 // ~366.25/365.25
+#define RAD2DEG   57.29577951
 
 int yr = 2023; 
 byte mth = 01, day = 14, hr = 18, min = 00;
@@ -229,7 +250,7 @@ void actionCmd() {
   Miscellaneous:  B+  B-  B0  B1  B2  B3  F+  F-  FQ  FF  FS  r+  r-  f+  f-  hs  hf  hp
   Library:        LF  LN  LB
 */
-  EEPROM.put(0, ee);                  // Update any permanent settings
+  if(!Serial.available()) EEPROM.put(0, ee);                  // Update any permanent settings
   Serial.print(resp);
   if (resp[1]) Serial.print('#');
   if (test) Serial.println('|');
@@ -850,21 +871,20 @@ void setCatalogObj() {        //  :LCNNNN#
   switch (catalog) {
     case 0:
       if (v > 7840) v = -1;   // NGC
-      randomSeed(v + 1000L);
       cngc = v;
       break;
     case 1:
       if (v > 5386) v = -1;   // IC
-      randomSeed(v + 10000L);
       ic = v;
       break;
     case 2:
       if (v > 12921) v = -1;  // UGC
-      randomSeed(v + 100000L);
       ugc = v;
       break;
   }
+  object = 2;
   if (v) {
+    randomSeed(v + catalog + 2);
     objRA = random(86400L);
     objDEC = random(648000L) - 324000L;
     objMag = random(100) + 50;
@@ -872,7 +892,6 @@ void setCatalogObj() {        //  :LCNNNN#
     objQual = random(7);
     objClass = random(6);
   }
-  object = 2;
 }
 //-------------------------------------------------------------------------------------------------
 void setMess() {              //  :LMNNNN#
@@ -881,7 +900,7 @@ void setMess() {              //  :LMNNNN#
   if (!sscanf(buf, "LM%d", &v)) return;
   if (v > 110) v = -1;
   else {
-    randomSeed(v);
+    randomSeed(v + 1);
     objRA = random(86400L);
     objDEC = random(468000L) - 144000L;
     objMag = random(86) + 16;
@@ -910,7 +929,7 @@ void setStar() {              //  :LSNNNN#
   }
   if (ee.model != 16 && starList > 0) v = -1;
   if (v > 0) {
-    randomSeed(v + 1000000L + starList);
+    randomSeed(v + starList);
     objRA = random(86400L);
     objDEC = random(648000L) - 324000L;
     objMag = random(74 + starList * 3) - 14;
@@ -940,10 +959,10 @@ void getInfo() {
       v = star;
       memcpy(resp, "STAR", 4);
       memcpy(resp + 12, resp, 4);
-      if (!starList && v >= 901) {
+      if (!starList && v >= 901) {                              // Solar system
         strcpy_P(buf, (char *)pgm_read_word(&(messages[v-901])));
         memcpy(resp, buf, 8);
-        if (v == 903) memcpy(resp + 16, "Phase: 23.5%\0", 12); // Moon phase
+        if (v == 903) memcpy(resp + 16, "Phase: 23.5%\0", 12);  // Moon phase
         else {
           sprintf(buf, "%d\"", objSize);
           memcpy(resp + 32 - strlen(buf), buf, strlen(buf));    // Size
@@ -1184,7 +1203,7 @@ float sidTime() {    // Local Sidereal Time - returns value >= 0 and < 86400 (24
   long t = mJDx10(yr, mth ,day);
   float T = (float)t / 365250.0;
   float th0 = normF((100.46061837 + 36000.770053608 * T + 0.000387933 * T * T - T * T * T / 37810000), 360); // In degrees
-        th0 += float(hr + min / 60.0 + ms / 3600000.0 + ee.hourOffset) * 15 * sol2sid;  // Account for time
+        th0 += float(hr + min / 60.0 + ms / 3600000.0 + ee.hourOffset) * 15 * SOL2SID;  // Account for time
         th0 -= (ee.longitude[ee.siteNo] / 60.0);        // Account for longitude
         th0 = normF(th0, 360) * 240;                    // (24*60*60/360=240)
         th0 += sidOffset;                               // Account for user update (360/24=15)
@@ -1193,23 +1212,23 @@ float sidTime() {    // Local Sidereal Time - returns value >= 0 and < 86400 (24
 }
 //-------------------------------------------------------------------------------------------------
 float sinD(float v) {
-  return sin(v * deg2rad);
+  return sin(v / RAD2DEG);
 }
 //-------------------------------------------------------------------------------------------------
 float cosD(float v) {
-  return cos(v * deg2rad);
+  return cos(v / RAD2DEG);
 }
 //-------------------------------------------------------------------------------------------------
 float tanD(float v) {
-  return tan(v * deg2rad);
+  return tan(v / RAD2DEG);
 }
 //-------------------------------------------------------------------------------------------------
 float asinD(float v) {
-  return asin(v) * rad2deg;
+  return asin(v) * RAD2DEG;
 }
 //-------------------------------------------------------------------------------------------------
 float atan2D(float a, float b) {
-  return normF(atan2(a, b) * rad2deg, 360);
+  return normF(atan2(a, b) / RAD2DEG, 360);
 }
 //-------------------------------------------------------------------------------------------------
 long normL(long v, long r) {
