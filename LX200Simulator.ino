@@ -1,23 +1,3 @@
-// 0123456789ABCDEF 
-// RA   12:34:56
-// DEC +12*34:56
-// AZ  123*45:06
-// ALT +12*34:56
-// ObjRA   12:34:56
-// ObjDEC +12*34:56
-// ObjAZ  123*56:06
-// ObjALT +12*34:56
-// Loc 12:34:56
-// UTC 01:23:45
-// Cal 12/25/23
-// Sid 12:34:56
-// Lat:   +51*34
-// Long:  359*12
-// Model:    10"
-// Max Slew: 8
-// Move:  E(G) N(G)
-// Mount: P
-
 #define version "LX200 Simulator V2.230128#"
 
 #pragma region DEFINITIONS
