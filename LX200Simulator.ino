@@ -3,8 +3,6 @@
 #pragma region DEFINITIONS
 #include <EEPROM.h>
 #include <Arduino.h>
-#include <Wire.h>
-#include <LiquidCrystal.h>
 //#include <SoftwareSerial.h>
 //SoftwareSerial Serial0(11, 12);   //RXD, TXD
 #define SOL2SID   1.0027379093508                 // ~366.25/365.25
@@ -39,7 +37,7 @@ struct ee {
                           "AAA",
                           "AAA",
                           "AAA"};
-  int latitude[4] =  {3089, 0, 0, 0};
+  int latitude[4] =  {3071, 21577, 0, 0};
   int longitude[4] = {0, 0, 0, 0};
   long homeHA = 0;
   long homeDEC = 0;
@@ -110,6 +108,7 @@ void loop() {
     digitalWrite(13, HIGH);
   }
   else digitalWrite(13, LOW);
+  if (ee.align == 'L') digitalWrite(13, millis() & B1000000);
 }
 #pragma endregion LOOP
 #pragma region COMMAND HANDLING
