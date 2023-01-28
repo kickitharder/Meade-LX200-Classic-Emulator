@@ -2,7 +2,7 @@
 
 This sketch will work on any Arduino with at least 32K Flash ROM, 2K RAM and 512 byte EEPROM.  It has been tested on the Uno, Nano and Mega.
 
-When an Arduino with the code loaded onto it is plugged into a PC, it will appear as a COM port which can then be picked up by any application which can communicate with a Meade LX200 Classic SCT telescope (LX200).  This includes planetarium software and other telescope control programs which can natively talk to the LX200.  Additionally, ASCOM drivers which have been written for these LX200s, such as Keith Rickard’s Meade LX200 Classic ASCOM Driver, will also work.
+When an Arduino with the code loaded onto it is plugged into a PC, it will appear as a COM port which can then be picked up by any application which can communicate with a Meade LX200 Classic SCT telescope (LX200).  This includes planetarium software and other telescope control programs which can natively talk to the LX200.  Additionally, ASCOM drivers which have been written for these LX200s, such as Keith Rickard’s Meade LX200 Classic ASCOM Driver, will also work.  The Arduino's onboard LED will light to indicate when the telescope is 'moving' and flash rapidly if in LAND mode.
 
 The Simulator emulates the slewing of the telescope, mount pulse and tracking frequency, and nearly all other commands (see Limitations below).  Settings which are normally remembered by a real LX200 are stored in the Arduino’s EEPROM.
 
@@ -32,4 +32,4 @@ I have added two additional commands for the Simulator (they are not on the real
 6)  :VT#    Enter Test Mode
 
 Keith Rickard
-18 January 2023 
+28 January 2023 
