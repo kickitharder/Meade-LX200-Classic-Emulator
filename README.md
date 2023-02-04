@@ -6,7 +6,7 @@ When an Arduino with the code loaded onto it is plugged into a PC, it will appea
 
 The Simulator emulates the slewing of the telescope, mount pulse and tracking frequency, and nearly all other commands (see Limitations below).  Settings which are normally remembered by a real LX200 are stored in the Arduino’s EEPROM.
 
-Its main use it to test the development of ASCOM drivers and whether software will work with an LX200 with actually being connected to a real LX200.
+Its main use it to test the development of ASCOM drivers and whether software will work with an LX200 without actually being connected to a real LX200.
 
 The Simulator is still in development – please advise me of any issues you may come across.
 
@@ -32,4 +32,4 @@ I have added two additional commands for the Simulator (they are not on the real
 6)  :VT#    Enter Test Mode
 
 Keith Rickard
-28 January 2023 
+4 February 2023 
