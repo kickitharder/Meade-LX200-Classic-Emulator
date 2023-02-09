@@ -1,15 +1,21 @@
-#define version "LX200 Simulator V2.230128#"
+#define version "LX200 Simulator V2.230207#"
 
 #pragma region DEFINITIONS
 #include <EEPROM.h>
 #include <Arduino.h>
-//#include <SoftwareSerial.h>
-//SoftwareSerial Serial0(11, 12);   //RXD, TXD
+#include <SoftwareSerial.h>
+
+SoftwareSerial Serial0(11, 12);   //RXD, TXD
+Stream* _serial;
 #define SOL2SID   1.0027379093508                 // ~366.25/365.25
 #define RAD2DEG   57.29577951
+#define NORTH A0
+#define SOUTH A1
+#define EAST  A2
+#define WEST  A3
 
-int yr = 2023; 
-byte mth = 01, day = 14, hr = 18, min = 00;
+int yr = 2023;
+byte mth = 02, day = 06, hr = 20, min = 47;
 unsigned long ms = 0, clock;
 long sidOffset = 0;
 
@@ -31,6 +37,7 @@ int slewRAdir, slewDECdir, moveRAdir, moveDECdir;
 bool pulseNS, pulseEW;
 int slewRate = 1928;                            // SLEW rate 2-8 deg/s (241 * 8 = 1928)
 int moveRate = 1928;                            // 0. NONE 1.GUIDE = 2x sid, 2.CNTR = 32x sid, 3.FIND = 2 degs/s, 4.SLEW = 2-8 degs/s
+byte ccdMove = 0;
 
 struct ee {
   char siteNames[4][4] = {"PUT", 
@@ -87,14 +94,20 @@ char resp[34], buf[16];
 // SETUP
 //=================================================================================================
 void setup() {
+  pinMode(NORTH, INPUT_PULLUP);
+  pinMode(SOUTH, INPUT_PULLUP);
+  pinMode(EAST, INPUT_PULLUP);
+  pinMode(WEST, INPUT_PULLUP);
+
   clock = millis();
   if (EEPROM.read(0) == 'Z' || EEPROM.read(0) == 255) EEPROM.put(0, ee);
   EEPROM.get(0, ee);
   pinMode(13, OUTPUT);
   Serial.begin(9600);
+  Serial0.begin(9600);
   targRA = telRA = (long)sidTime();
   buf[0] = 0;
-  //Serial.print('\n');
+  //_serial->print('\n');
 }
 #pragma endregion SETUP
 #pragma region LOOP
@@ -102,6 +115,10 @@ void setup() {
 // LOOP
 //=================================================================================================
 void loop() {
+  ccdPort();
+  _serial = &Serial;    // Look at the Serial port
+  actionCmd();
+  _serial = &Serial0;   // Look at the Software Serial port
   actionCmd();
   if (millis() > pulseTimer) pulseTimer = 0;
   if ((millis() < slewTimerRA) || (millis() < slewTimerDEC) || moveDECdir || moveRAdir || pulseTimer) {
@@ -118,8 +135,8 @@ void loop() {
 void actionCmd() {
   char c;
   resp[0] = resp[1] = 0;
-  while (Serial.available()) {                  // Read in command
-    c = Serial.read();
+  while (_serial->available()) {                  // Read in command
+    c = _serial->read();
     if (guideBuddy(c)) return;
     if (c == char(6)) c = '6';
     if (c < 32 || c > 127) return;
@@ -129,7 +146,7 @@ void actionCmd() {
     if (c == '#') break;
   }
   if (buf[0] != ':' || c != '#') return;
-  if (test) Serial.print(buf);
+  if (test) _serial->print(buf);
   ptr = buf[ptr - 1] = 0;                       // Remove '#' and reset other things
   memcpy(buf, buf + 1, 15);                     // Shift buf chars to the left one.
 // HOME SEARCH IN OPERATION - 16" LX200 ONLY
@@ -190,7 +207,7 @@ void actionCmd() {
 // MISCELLANEOUS
   if (buf[0] == 'A') setAlign();
   if (cmd("6")) resp[0] = ee.align;
-  if (cmd("VE")) resp[0] = Serial.println(F(version)) & 0;
+  if (cmd("VE")) resp[0] = _serial->println(F(version)) & 0;
   if (cmd("VZ")) resp[0] = ee.siteNames[0][0] = 'Z';    // Factory eset Arduino's EEPROM
   if (cmd("VS")) ee.model = 8;                          // 7", 8" & 10"
   if (cmd("VM")) ee.model = 12;                         // 12"
@@ -229,10 +246,10 @@ void actionCmd() {
   Miscellaneous:  B+  B-  B0  B1  B2  B3  F+  F-  FQ  FF  FS  r+  r-  f+  f-  hs  hf  hp
   Library:        LF  LN  LB
 */
-  if(!Serial.available()) EEPROM.put(0, ee);                  // Update any permanent settings
-  Serial.print(resp);
-  if (resp[1]) Serial.print('#');
-  if (test) Serial.println('|');
+  if(!_serial->available()) EEPROM.put(0, ee);                  // Update any permanent settings
+  _serial->print(resp);
+  if (resp[1]) _serial->print('#');
+  if (test) _serial->println('|');
 }
 //-------------------------------------------------------------------------------------------------
 bool cmd(char c[]) {
@@ -240,10 +257,10 @@ bool cmd(char c[]) {
 }
 //-------------------------------------------------------------------------------------------------
 void sendMsg(char* msg) {
-  Serial.print(msg);
-  Serial.print('#');
+  _serial->print(msg);
+  _serial->print('#');
   resp[0] = 0;
-  if (test) Serial.println();
+  if (test) _serial->println();
 }
 #pragma endregion COMMAND HANDLING
 #pragma region GUIDEBUDDY
@@ -255,7 +272,7 @@ bool guideBuddy(char c) {
   long v = 0, raPulse, decPulse;
   updateCoords();
   if (strchr("><^v", c)) {
-    v = Serial.parseInt();
+    v = _serial->parseInt();
     raPulse = v /1000;
     decPulse = v * 15 /1000;
   }
@@ -288,7 +305,7 @@ bool guideBuddy(char c) {
   }
   updateCoords();
   if (v) pulseTimer = millis() + v;
-  Serial.print(c);
+  _serial->print(c);
   return true;                // Was a GuideBuddy command
 }
 #pragma endregion GUIDEBUDDY
@@ -515,6 +532,29 @@ void setTimeOffset() {        //  :SGsHH#
 //=================================================================================================
 // MOVEMENT
 //=================================================================================================
+void ccdPort() {
+  byte ccdMovePrev = ccdMove;
+  ccdMove = 0;
+  if (!digitalRead(NORTH)) moveCCD('n', B01);
+  if (!digitalRead(SOUTH)) moveCCD('s', B01);
+  if (!digitalRead(EAST))  moveCCD('e', B10);
+  if (!digitalRead(WEST))  moveCCD('w', B10);
+  if (ccdMovePrev & B01 && !(ccdMove & B01)) stopCCD(B01);
+  if (ccdMovePrev & B10 && !(ccdMove & B10)) stopCCD(B10);
+}
+//-------------------------------------------------------------------------------------------------
+bool moveCCD(char dir, byte axis) {
+  buf[1] = dir;
+  ccdMove |= axis;
+  move();
+}
+//-------------------------------------------------------------------------------------------------
+void stopCCD(byte axis) {
+  updateCoords();
+  if (axis & B01) moveDECdir = 0;
+  if (axis & B10) moveRAdir = 0;
+}
+//-------------------------------------------------------------------------------------------------
 void move() {                 // :Mn#  :Ms#  :Me#  :Mw#  :MS#  :MA#
   switch (buf[1]) {
     case 'n': if (moveDECdir != 1)  {updateCoords(); moveDECdir =  1; moveDECmillis = millis();} break;
@@ -736,20 +776,20 @@ void getAlignMenu() {         //  :Gx#
 void vars() {
   updateCoords();
   eq2altAz(telRA, telDEC);
-  Serial.print(F("\nRA:\t")); Serial.println(telRA / 3600.0, 4);
-  Serial.print(F("DEC:\t")); Serial.println(telDEC / 3600.0, 4);
-  Serial.print(F("ObjRA:\t")); Serial.println(objRA / 3600.0, 4);
-  Serial.print(F("ObjDEC:\t")); Serial.println(objDEC / 3600.0, 4);
-  Serial.print(F("AZ:\t")); Serial.println(telAZ / 3600.0, 4);
-  Serial.print(F("ALT:\t")); Serial.println(telALT / 3600.0, 4);
-  Serial.print(F("ObjAZ:\t")); Serial.println(objAZ / 3600.0, 4);
-  Serial.print(F("ObjALT:\t")); Serial.println(objALT / 3600.0, 4);
-  Serial.print(F("SidTime:")); Serial.println(sidTime() /3600.0, 4);
-  Serial.print(F("HourOff:")); Serial.println(ee.hourOffset);
-  Serial.print(F("Model:\t")); Serial.println(ee.model);
-  Serial.print(F("SwRate:\t")); Serial.println(slewRate / 240);
-  Serial.print(F("MvRate:\t")); Serial.println(moveRate);
-  Serial.print(F("Mode:\t")); Serial.println(ee.align);
+  _serial->print(F("\nRA:\t")); _serial->println(telRA / 3600.0, 4);
+  _serial->print(F("DEC:\t")); _serial->println(telDEC / 3600.0, 4);
+  _serial->print(F("ObjRA:\t")); _serial->println(objRA / 3600.0, 4);
+  _serial->print(F("ObjDEC:\t")); _serial->println(objDEC / 3600.0, 4);
+  _serial->print(F("AZ:\t")); _serial->println(telAZ / 3600.0, 4);
+  _serial->print(F("ALT:\t")); _serial->println(telALT / 3600.0, 4);
+  _serial->print(F("ObjAZ:\t")); _serial->println(objAZ / 3600.0, 4);
+  _serial->print(F("ObjALT:\t")); _serial->println(objALT / 3600.0, 4);
+  _serial->print(F("SidTime:")); _serial->println(sidTime() /3600.0, 4);
+  _serial->print(F("HourOff:")); _serial->println(ee.hourOffset);
+  _serial->print(F("Model:\t")); _serial->println(ee.model);
+  _serial->print(F("SwRate:\t")); _serial->println(slewRate / 240);
+  _serial->print(F("MvRate:\t")); _serial->println(moveRate);
+  _serial->print(F("Mode:\t")); _serial->println(ee.align);
   resp[0] = 0;
 }
 #pragma endregion MISCELLANEOUS
@@ -1035,7 +1075,7 @@ void updateCoords() {
       homeStat == '1';                              // Home position found
     }
     if (moveRAdir) {                                // RA pulse move?
-      mvt = (millisNow - moveRAmillis) * moveRAdir * (moveRate - 1);    // moveRate: G = 2, C = 32, F = 480, S = 240 * slewRate
+      mvt = (millisNow - moveRAmillis) * moveRAdir * (ccdMove & B10 ? 1 : moveRate - 1);    // moveRate: G = 2, C = 32, F = 480, S = 240 * slewRate
       telRAms += mvt;
       telRAms %= 1000;
       mvt += telRAms;
@@ -1046,7 +1086,7 @@ void updateCoords() {
     else if (freq != 601 && !freqQ) telRA += long(float(millisNow - moveRAmillis) * 601.0 / float(freq)); // Account for drive freq
 
     if (moveDECdir) {                               // DEC pulse move?
-      mvt = (millisNow - moveDECmillis) * moveDECdir * moveRate * 15;   // moveRate: G = 30, C = 480, F = 7200, S = 3600 * slewRate
+      mvt = (millisNow - moveDECmillis) * moveDECdir * (ccdMove & B01 ? 1 : moveRate) * 15;   // moveRate: G = 30, C = 480, F = 7200, S = 3600 * slewRate
       mvt /= 1000;
       telDEC += mvt;                                 // Pulse move
       homeStat = '0';
