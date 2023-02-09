@@ -31,5 +31,10 @@ I have added two additional commands for the Simulator (they are not on the real
 5)  :VL#    Make Simulator act as a 16" LX200
 6)  :VT#    Enter Test Mode
 
+Other features include:
+
+1) Emulation of the LX200's CCD port using pins A0 to A3 on the Arduino to read directional pulse (see source code)
+2) Provision of a second serial port, just like on a real LX200's RS232 port!
+
 Keith Rickard
-4 February 2023 
+9 February 2023 
