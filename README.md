@@ -26,10 +26,12 @@ I have added two additional commands for the Simulator (they are not on the real
 
 1)  :VE#    Returns the version of the Simulator.
 2)  :VZ#    Resets the Simulator's settings.  The Arduino needs to be reset/restarted for this to take effect.
-3)  :VS#    Make Simulator act as a 7", 8" or 10" LX200
-4)  :VM#    Make Simulator act as a 12" LX200
-5)  :VL#    Make Simulator act as a 16" LX200
-6)  :VT#    Enter Test Mode
+3)  :VR#    Restart the Simulator
+4)  :VS#    Make Simulator act as a 7", 8" or 10" LX200
+5)  :VM#    Make Simulator act as a 12" LX200
+6)  :VL#    Make Simulator act as a 16" LX200
+7)  :VT#    Enter Test Mode
+8)  :VA#    Show key variable values
 
 Other features include:
 
@@ -37,4 +39,4 @@ Other features include:
 2) Provision of a second serial port, just like on a real LX200's RS232 port!
 
 Keith Rickard
-9 February 2023 
+10 July 2023
