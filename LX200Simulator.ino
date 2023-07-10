@@ -1,4 +1,4 @@
-#define version "LX200 Simulator V2.230207#"
+#define version "LX200 Emulator V2.230710#"
 
 #pragma region DEFINITIONS
 #include <EEPROM.h>
@@ -13,6 +13,7 @@ Stream* _serial;
 #define SOUTH A1
 #define EAST  A2
 #define WEST  A3
+#define GND   A4
 
 int yr = 2023;
 byte mth = 02, day = 06, hr = 20, min = 47;
@@ -98,6 +99,8 @@ void setup() {
   pinMode(SOUTH, INPUT_PULLUP);
   pinMode(EAST, INPUT_PULLUP);
   pinMode(WEST, INPUT_PULLUP);
+  pinMode(GND, OUTPUT);
+  digitalWrite(GND, LOW);
 
   clock = millis();
   if (EEPROM.read(0) == 'Z' || EEPROM.read(0) == 255) EEPROM.put(0, ee);
@@ -116,16 +119,16 @@ void setup() {
 //=================================================================================================
 void loop() {
   ccdPort();
-  _serial = &Serial;    // Look at the Serial port
+  _serial = &Serial;                                          // Look at the Serial port
   actionCmd();
-  _serial = &Serial0;   // Look at the Software Serial port
+  _serial = &Serial0;                                         // Look at the Software Serial port (Bluetooth?)
   actionCmd();
   if (millis() > pulseTimer) pulseTimer = 0;
   if ((millis() < slewTimerRA) || (millis() < slewTimerDEC) || moveDECdir || moveRAdir || pulseTimer) {
-    digitalWrite(13, HIGH);
+    digitalWrite(13, HIGH);                                   // Mount is moving
   }
   else digitalWrite(13, LOW);
-  if (ee.align == 'L') digitalWrite(13, millis() & B1000000);
+  if (ee.align == 'L') digitalWrite(13, millis() & B1000000); // Flash LED rapidly to indicate telescope is in LAND mode
 }
 #pragma endregion LOOP
 #pragma region COMMAND HANDLING
@@ -133,7 +136,7 @@ void loop() {
 // COMMAND HANDLING
 //=================================================================================================
 void actionCmd() {
-  char c;
+  char c = 0;
   resp[0] = resp[1] = 0;
   while (_serial->available()) {                  // Read in command
     c = _serial->read();
@@ -166,7 +169,7 @@ void actionCmd() {
   if (cmd("Sa")) setObjALT();
   if (cmd("GZ")) getAZ();
   if (cmd("Sz")) setObjAZ();
-  if (cmd("U"))  resp[0] = prec++ & 0;
+  if (cmd("U"))  resp[0] = (prec ^= 1) & 0;
   if (cmd("CM")) matchCoords();
 // DATE AND TIME
   if (cmd("GC")) getDate();
@@ -208,12 +211,13 @@ void actionCmd() {
   if (buf[0] == 'A') setAlign();
   if (cmd("6")) resp[0] = ee.align;
   if (cmd("VE")) resp[0] = _serial->println(F(version)) & 0;
-  if (cmd("VZ")) resp[0] = ee.siteNames[0][0] = 'Z';    // Factory eset Arduino's EEPROM
+  if (cmd("VZ")) resp[0] = ee.siteNames[0][0] = 'Z';    // Factory reset Arduino's EEPROM
   if (cmd("VS")) ee.model = 8;                          // 7", 8" & 10"
   if (cmd("VM")) ee.model = 12;                         // 12"
   if (cmd("VL")) ee.model = 16;                         // 16"
-  if (cmd("VR")) vars();
+  if (cmd("VA")) vars();
   if (cmd("VT")) resp[0] = '0' + (test ^= 1);           // Test mode
+  if (cmd("VR")) asm volatile ("jmp 0");
 // LIBRARY
   if (cmd("Gy")) strcpy(resp, objTypes);
   if (cmd("Sy")) setObjType();
@@ -770,7 +774,7 @@ void getAlignMenu() {         //  :Gx#
     case '2': strcpy(resp, "LAND            "); break;
     default: return;
   }
-  if (ee.siteNo == buf[0] - '0') resp[10] = '\x02';
+  if (ee.align == resp[0]) resp[10] = '\x02';
 }
 //-------------------------------------------------------------------------------------------------
 void vars() {
