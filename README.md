@@ -1,4 +1,4 @@
-# Meade LX200 Classic Simulator (Beta)
+# Meade LX200 Classic Emulator (Beta)
 
 This sketch will work on any Arduino with at least 32K Flash ROM, 2K RAM and 512 byte EEPROM.  It has been tested on the Uno, Nano and Mega.
 
@@ -36,7 +36,7 @@ I have added two additional commands for the Simulator (they are not on the real
 Other features include:
 
 1) Emulation of the LX200's CCD port using pins A0 to A3 on the Arduino to read directional pulse (see source code)
-2) Provision of a second serial port, just like on a real LX200's RS232 port!
+2) Provision of a second serial port, just like on a real LX200's RS232 ports!
 
 Keith Rickard
 10 July 2023
