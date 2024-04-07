@@ -88,6 +88,7 @@ int objMag = 0, objSize  = 0;
 byte objClass = 0, objQual = 0;
 
 char resp[34], buf[16];
+void(* resetFunc) (void) = 0;
 #pragma endregion DEFINITIONS
 #pragma region SETUP
 //=================================================================================================
@@ -105,10 +106,8 @@ void setup() {
   pinMode(13, OUTPUT);
   Serial.begin(9600);
   Serial0.begin(9600);
-  // Serial.println(version);
   targRA = telRA = (long)sidTime();
   buf[0] = 0;
-  //_serial->print('\n');
 }
 #pragma endregion SETUP
 #pragma region LOOP
@@ -210,11 +209,12 @@ void actionCmd() {
   if (buf[0] == 'A') setAlign();
   if (cmd("6")) resp[0] = ee.align;
   if (cmd("VE")) resp[0] = _serial->print(F(version)) & 0;
-  if (cmd("VZ")) resp[0] = ee.siteNames[0][0] = 'Z';    // Factory eset Arduino's EEPROM
+  if (cmd("VZ")) resp[0] = ee.siteNames[0][0] = 'Z';    // Factory reset Arduino's EEPROM
   if (cmd("VS")) ee.model = 8;                          // 7", 8" & 10"
   if (cmd("VM")) ee.model = 12;                         // 12"
   if (cmd("VL")) ee.model = 16;                         // 16"
-  if (cmd("VR")) vars();
+  if (cmd("VR")) resetFunc();                           // Reset Arduino
+  if (cmd("VA")) vars();
   if (cmd("VT")) resp[0] = '0' + (test ^= 1);           // Test mode
 // LIBRARY
   if (cmd("Gy")) strcpy(resp, objTypes);
