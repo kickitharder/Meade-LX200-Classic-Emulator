@@ -1,4 +1,4 @@
-#define version "LX200 Emulator V2.231112#"
+#define version "LX200 Emulator V2.240407#"
 
 #pragma region DEFINITIONS
 #include <EEPROM.h>
@@ -573,10 +573,10 @@ void stop() {                 //  :Qn#  :Qs#  :Qe#  :Qw#  :Q#
   resp[0] = 0;
   updateCoords();
    switch (buf[1]) {
-    case 'n': moveDECdir = 0; break;
-    case 's': moveDECdir = 0; break;
-    case 'e': moveRAdir  = 0; break;
-    case 'w': moveRAdir  = 0; break;
+    case 'n': if (moveDECdir == 1) {moveDECdir = 0;} break;
+    case 's': if (moveDECdir == -1) {moveDECdir = 0;} break;
+    case 'e': if (moveRAdir == 1) {moveRAdir = 0;}; break;
+    case 'w': if (moveRAdir == -1) {moveRAdir = 0;}; break;
     case '\0': slewRAdir = slewDECdir = 0; break;
   }
 }
