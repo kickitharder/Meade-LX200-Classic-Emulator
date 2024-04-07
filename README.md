@@ -25,8 +25,8 @@ Limitations
 I have added two additional commands for the emulator (they are not on the real LX200):
 
 1)  :VE#    Returns the version of the emulator.
-2)  :VZ#    Resets the emulator's settings.  The Arduino needs to be reset/restarted for this to take effect.
-3)  :VR#    Restart the emulator
+2)  :VZ#    Resets the emulator's settings.  The Arduino needs to be reset for this to take effect.
+3)  :VR#    Soft reset Arduino.
 4)  :VS#    Make emulator act as a 7", 8" or 10" LX200
 5)  :VM#    Make emulator act as a 12" LX200
 6)  :VL#    Make emulator act as a 16" LX200
@@ -39,4 +39,4 @@ Other features include:
 2) Provision of a second serial port, just like on a real LX200's RS232 ports!
 
 Keith Rickard
-12 November 2023
+7 April 2024
