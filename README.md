@@ -1,4 +1,4 @@
-# Meade LX200 Classic Emulator (Beta)
+# Meade LX200 Classic Emulator
 
 This sketch will work on any Arduino with at least 32K Flash ROM, 2K RAM and 512 byte EEPROM.  It has been tested on the Uno, Nano and Mega.
 
@@ -22,7 +22,7 @@ Limitations
 
 5)	The emulator assumes a max slew rate is 8 degrees per second.  For 12” and 16” LX200s, this is 6 and 4 degrees per second respectively, so please bare that in mind.
 
-I have added two additional commands for the emulator (they are not on the real LX200):
+I have added a few additional commands for the emulator (they are not on the real LX200):
 
 1)  :VE#    Returns the version of the emulator.
 2)  :VZ#    Resets the emulator's settings.  The Arduino needs to be reset for this to take effect.
