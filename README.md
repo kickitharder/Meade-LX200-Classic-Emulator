@@ -26,7 +26,7 @@ I have added two additional commands for the emulator (they are not on the real 
 
 1)  :VE#    Returns the version of the emulator.
 2)  :VZ#    Resets the emulator's settings.  The Arduino needs to be reset for this to take effect.
-3)  :VR#    Soft reset Arduino.
+3)  :VR#    Soft reset the Arduino and restart the LX200 emulator
 4)  :VS#    Make emulator act as a 7", 8" or 10" LX200
 5)  :VM#    Make emulator act as a 12" LX200
 6)  :VL#    Make emulator act as a 16" LX200
